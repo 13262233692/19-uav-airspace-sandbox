@@ -38,56 +38,53 @@ export const UAVVertexShader = `
     vec3 pos = position;
     vec3 transformedNormal = normal;
     
-    float bladeLength = 1.75;
-    float bladeThickness = 0.025;
-    float bladeWidth = 0.15;
     float rotorY = 2.2;
+    float bladeHalfLength = 1.75;
+    float bladeHalfWidth = 0.15;
+    float bladeHalfThickness = 0.025;
     
-    float isBlade1 = step(abs(position.x), bladeLength) * 
-                     step(abs(position.y - rotorY), bladeThickness) * 
-                     step(abs(position.z), bladeWidth) *
-                     step(2.0, abs(position.x - 2.5)) *
-                     step(abs(position.x - 2.5), 3.0);
+    float isBlade = 0.0;
+    vec3 rotorCenter = vec3(0.0);
     
-    float isBlade2 = step(abs(position.x), bladeLength) * 
-                     step(abs(position.y - rotorY), bladeThickness) * 
-                     step(abs(position.z), bladeWidth) *
-                     step(2.0, abs(position.x + 2.5)) *
-                     step(abs(position.x + 2.5), 3.0);
+    vec3 absPos = vec3(abs(pos.x), abs(pos.y - rotorY), abs(pos.z));
     
-    float isBlade3 = step(abs(position.z), bladeLength) * 
-                     step(abs(position.y - rotorY), bladeThickness) * 
-                     step(abs(position.x), bladeWidth) *
-                     step(2.0, abs(position.z - 2.5)) *
-                     step(abs(position.z - 2.5), 3.0);
+    float inBladeX = step(absPos.y, bladeHalfThickness) * 
+                     step(absPos.x, bladeHalfLength) * 
+                     step(absPos.z, bladeHalfWidth);
     
-    float isBlade4 = step(abs(position.z), bladeLength) * 
-                     step(abs(position.y - rotorY), bladeThickness) * 
-                     step(abs(position.x), bladeWidth) *
-                     step(2.0, abs(position.z + 2.5)) *
-                     step(abs(position.z + 2.5), 3.0);
+    float inBladeZ = step(absPos.y, bladeHalfThickness) * 
+                     step(absPos.z, bladeHalfLength) * 
+                     step(absPos.x, bladeHalfWidth);
     
-    float isBlade = isBlade1 + isBlade2 + isBlade3 + isBlade4;
+    float rotor1 = step(2.0, pos.x) * step(pos.x, 3.0) * inBladeX;
+    float rotor2 = step(-3.0, pos.x) * step(pos.x, -2.0) * inBladeX;
+    float rotor3 = step(2.0, pos.z) * step(pos.z, 3.0) * inBladeZ;
+    float rotor4 = step(-3.0, pos.z) * step(pos.z, -2.0) * inBladeZ;
+    
+    isBlade = rotor1 + rotor2 + rotor3 + rotor4;
+    
+    if (rotor1 > 0.5) {
+      rotorCenter = vec3(2.5, rotorY, 0.0);
+    } else if (rotor2 > 0.5) {
+      rotorCenter = vec3(-2.5, rotorY, 0.0);
+    } else if (rotor3 > 0.5) {
+      rotorCenter = vec3(0.0, rotorY, 2.5);
+    } else if (rotor4 > 0.5) {
+      rotorCenter = vec3(0.0, rotorY, -2.5);
+    }
     
     if (isBlade > 0.5) {
-      vec3 rotorCenter = vec3(0.0, rotorY, 0.0);
-      
-      if (isBlade1 > 0.5) rotorCenter = vec3(2.5, rotorY, 0.0);
-      if (isBlade2 > 0.5) rotorCenter = vec3(-2.5, rotorY, 0.0);
-      if (isBlade3 > 0.5) rotorCenter = vec3(0.0, rotorY, 2.5);
-      if (isBlade4 > 0.5) rotorCenter = vec3(0.0, rotorY, -2.5);
-      
       vec3 localPos = pos - rotorCenter;
       vec3 localNormal = transformedNormal;
       
-      float baseSpeed = uRotorSpeed * (2.0 + aSpeed * 0.05);
+      float baseSpeed = uRotorSpeed * (1.5 + aSpeed * 0.05);
       float angleOffset = aUAVId * 0.7;
       float direction = 1.0;
       
-      if (isBlade1 > 0.5) direction = -1.0;
-      if (isBlade2 > 0.5) direction = 1.0;
-      if (isBlade3 > 0.5) direction = 1.0;
-      if (isBlade4 > 0.5) direction = -1.0;
+      if (rotor1 > 0.5) direction = -1.0;
+      if (rotor2 > 0.5) direction = 1.0;
+      if (rotor3 > 0.5) direction = 1.0;
+      if (rotor4 > 0.5) direction = -1.0;
       
       float rotorAngle = uTime * baseSpeed * direction + angleOffset;
       
@@ -100,11 +97,11 @@ export const UAVVertexShader = `
     }
     
     vec4 worldPosition = modelMatrix * instanceMatrix * vec4(pos, 1.0);
-    vWorldPosition = worldPosition.xyz;
     
-    float bobOffset = sin(uTime * 2.0 + aUAVId) * 0.1;
+    float bobOffset = sin(uTime * 2.0 + aUAVId * 0.1) * 0.15;
     worldPosition.y += bobOffset;
-    vWorldPosition.y += bobOffset;
+    
+    vWorldPosition = worldPosition.xyz;
     
     vec4 mvPosition = viewMatrix * worldPosition;
     vViewPosition = -mvPosition.xyz;
@@ -137,7 +134,9 @@ export const UAVFragmentShader = `
     float diff = max(dot(normal, lightDir), 0.0);
     float spec = pow(max(dot(normal, halfDir), 0.0), 64.0);
     
-    int missionIndex = int(clamp(vMissionType, 0.0, 5.0));
+    int missionIndex = int(clamp(vMissionType + 0.5, 0.0, 5.0));
+    missionIndex = clamp(missionIndex, 0, 5);
+    
     vec3 baseColor = uMissionColors[missionIndex];
     
     float heightFactor = clamp(vWorldPosition.y / 250.0, 0.3, 1.0);
@@ -156,7 +155,7 @@ export const UAVFragmentShader = `
     vec3 finalColor = ambient + diffuse + specular + emissiveColor + rimColor;
     
     float pulse = sin(uTime * 3.0 + vUAVId * 0.1) * 0.5 + 0.5;
-    emissiveColor += baseColor * pulse * 0.05;
+    finalColor += baseColor * pulse * 0.05;
     
     float dist = length(vViewPosition);
     float fogFactor = exp(-dist * 0.0003);
