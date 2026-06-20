@@ -107,6 +107,12 @@ html, body {
   color: #f87171;
 }
 
+.stat-divider {
+  height: 1px;
+  background: rgba(100, 150, 255, 0.3);
+  margin: 10px 0;
+}
+
 #hud-bottom {
   position: absolute;
   bottom: 20px;

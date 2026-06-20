@@ -8,6 +8,10 @@ export class WebSocketClient {
     this.reconnectDelay = 1000;
     this.isConnected = false;
     this.lastDataTime = 0;
+    
+    this._pendingHeaderLength = null;
+    this._pendingJSON = false;
+    this._pendingConflictData = false;
   }
 
   on(event, handler) {
@@ -27,6 +31,10 @@ export class WebSocketClient {
     try {
       this.ws = new WebSocket(this.url);
       this.ws.binaryType = 'arraybuffer';
+      
+      this._pendingHeaderLength = null;
+      this._pendingJSON = false;
+      this._pendingConflictData = false;
       
       this.ws.onopen = () => {
         console.log('WebSocket 连接已建立');
@@ -58,6 +66,37 @@ export class WebSocketClient {
 
   _handleMessage(event) {
     const data = event.data;
+    
+    if (this._pendingHeaderLength === null && data instanceof ArrayBuffer && data.byteLength === 4) {
+      const view = new DataView(data);
+      this._pendingHeaderLength = view.getUint32(0, true);
+      this._pendingJSON = true;
+      return;
+    }
+    
+    if (this._pendingJSON && this._pendingHeaderLength !== null && typeof data === 'string') {
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.type === 'conflicts') {
+          this._pendingConflictData = true;
+          this._pendingConflictHeader = parsed;
+        } else if (parsed.type === 'init') {
+          this._emit('init', parsed);
+        }
+      } catch (e) {
+        console.error('解析 JSON 消息失败:', e);
+      }
+      this._pendingJSON = false;
+      this._pendingHeaderLength = null;
+      return;
+    }
+    
+    if (this._pendingConflictData && data instanceof ArrayBuffer) {
+      this._handleConflictData(data, this._pendingConflictHeader);
+      this._pendingConflictData = false;
+      this._pendingConflictHeader = null;
+      return;
+    }
     
     if (typeof data === 'string') {
       try {
@@ -94,6 +133,52 @@ export class WebSocketClient {
     });
     
     this.lastDataTime = now;
+  }
+
+  _handleConflictData(buffer, header) {
+    const now = Date.now();
+    const view = new DataView(buffer);
+    const floatView = new Float32Array(buffer);
+    
+    const conflictCount = view.getUint32(0, true);
+    const timestamp = view.getUint32(4, true);
+    const latency = now - timestamp;
+    
+    const conflicts = [];
+    const uavInConflict = new Set();
+    
+    const floatOffset = 2;
+    
+    for (let i = 0; i < conflictCount; i++) {
+      const baseIndex = floatOffset + i * 5;
+      
+      const id1 = Math.round(floatView[baseIndex]);
+      const id2 = Math.round(floatView[baseIndex + 1]);
+      const distance = floatView[baseIndex + 2];
+      const x1 = floatView[baseIndex + 3];
+      const z1 = floatView[baseIndex + 4];
+      
+      conflicts.push({
+        id1,
+        id2,
+        distance,
+        x1,
+        z1
+      });
+      
+      uavInConflict.add(id1);
+      uavInConflict.add(id2);
+    }
+    
+    this._emit('conflicts', {
+      conflicts,
+      conflictCount: header.totalConflicts,
+      uavInConflict,
+      detectionTime: header.detectionTime,
+      timestamp,
+      latency,
+      receivedAt: now
+    });
   }
 
   _attemptReconnect() {

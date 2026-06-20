@@ -29,6 +29,7 @@ export class UAVRenderer {
     this.missionTypeAttribute = null;
     this.speedAttribute = null;
     this.uavIdAttribute = null;
+    this.conflictFlagAttribute = null;
     
     this.positions = null;
     this.headings = null;
@@ -188,14 +189,14 @@ export class UAVRenderer {
     topGeometry.dispose();
     
     const armGeometry1 = new THREE.CylinderGeometry(0.15, 0.15, 5, 6);
-    armGeometry1.rotation.z = Math.PI / 2;
+    armGeometry1.rotateZ(Math.PI / 2);
     armGeometry1.translate(0, 0.5, 0);
     this._mergeGeometry(armGeometry1, positions, normals, indices, indexOffset);
     indexOffset += armGeometry1.attributes.position.count;
     armGeometry1.dispose();
     
     const armGeometry2 = new THREE.CylinderGeometry(0.15, 0.15, 5, 6);
-    armGeometry2.rotation.x = Math.PI / 2;
+    armGeometry2.rotateX(Math.PI / 2);
     armGeometry2.translate(0, 0.5, 0);
     this._mergeGeometry(armGeometry2, positions, normals, indices, indexOffset);
     indexOffset += armGeometry2.attributes.position.count;
@@ -334,6 +335,13 @@ export class UAVRenderer {
       this.uavIdAttribute.setX(i, i);
     }
     this.uavIdAttribute.needsUpdate = true;
+    
+    this.conflictFlagAttribute = new THREE.InstancedBufferAttribute(
+      new Float32Array(this.poolSize),
+      1
+    );
+    this.conflictFlagAttribute.setUsage(THREE.DynamicDrawUsage);
+    geometry.setAttribute('aConflictFlag', this.conflictFlagAttribute);
   }
 
   _initializeBuffers() {
@@ -701,6 +709,14 @@ export class UAVRenderer {
 
   getPoolSize() {
     return this.poolSize;
+  }
+
+  getPositions() {
+    return this.positions;
+  }
+
+  getConflictFlagAttribute() {
+    return this.conflictFlagAttribute;
   }
 
   isContextLost() {

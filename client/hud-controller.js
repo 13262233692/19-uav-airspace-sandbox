@@ -5,6 +5,9 @@ export class HUDController {
     this.latencyElement = document.getElementById('stat-latency');
     this.dataRateElement = document.getElementById('stat-datarate');
     this.drawCallsElement = document.getElementById('stat-drawcalls');
+    this.conflictCountElement = document.getElementById('stat-conflict-count');
+    this.conflictUAVElement = document.getElementById('stat-conflict-uav');
+    this.detectionTimeElement = document.getElementById('stat-detection-time');
     
     this.loadingElement = document.getElementById('loading');
     this.loadingProgress = document.getElementById('loading-progress');
@@ -98,6 +101,34 @@ export class HUDController {
     
     if (this.statusText) {
       this.statusText.textContent = connected ? '数据流连接正常' : '连接断开，正在重连...';
+    }
+  }
+
+  updateConflictCount(conflictCount, uavInConflict, detectionTime) {
+    if (this.conflictCountElement) {
+      this.conflictCountElement.textContent = conflictCount;
+      this.conflictCountElement.className = 'stat-value';
+      if (conflictCount > 50) {
+        this.conflictCountElement.classList.add('danger');
+      } else if (conflictCount > 10) {
+        this.conflictCountElement.classList.add('warn');
+      }
+    }
+    
+    if (this.conflictUAVElement) {
+      this.conflictUAVElement.textContent = uavInConflict;
+      this.conflictUAVElement.className = 'stat-value';
+      if (uavInConflict > 100) {
+        this.conflictUAVElement.classList.add('danger');
+      } else if (uavInConflict > 20) {
+        this.conflictUAVElement.classList.add('warn');
+      }
+    }
+    
+    if (this.detectionTimeElement) {
+      this.detectionTimeElement.textContent = detectionTime
+        ? detectionTime.toFixed(2)
+        : '0.00';
     }
   }
 }
