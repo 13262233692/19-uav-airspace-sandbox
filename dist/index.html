@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>未来城市低空经济 - 无人机集群管制沙盘</title>
+  <script type="module" crossorigin src="/assets/index-m-1v6_-3.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BdemVz4E.css">
+</head>
+<body>
+  <div id="app">
+    <div id="canvas-container"></div>
+    
+    <div id="loading">
+      <div class="loading-logo">UAV SWARM CONTROL</div>
+      <div class="loading-bar">
+        <div class="loading-progress" id="loading-progress"></div>
+      </div>
+      <div class="loading-text">正在加载 <span id="loading-stage">初始化系统...</span></div>
+    </div>
+    
+    <div id="hud">
+      <div class="hud-top">
+        <div class="title-panel">
+          <h1>无人机集群管制沙盘</h1>
+          <div class="subtitle">未来城市低空经济可视化系统 v1.0</div>
+        </div>
+        
+        <div class="stats-panel">
+          <div class="stat-row">
+            <span class="stat-label">帧率 (FPS)</span>
+            <span class="stat-value fps" id="stat-fps">--</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">无人机数量</span>
+            <span class="stat-value" id="stat-uav-count">--</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">数据延迟</span>
+            <span class="stat-value" id="stat-latency">-- ms</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">数据速率</span>
+            <span class="stat-value" id="stat-datarate">-- Mbps</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">绘制调用</span>
+            <span class="stat-value" id="stat-drawcalls">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="hud-bottom">
+      <div class="legend-panel">
+        <div class="legend-title">任务类型图例</div>
+        <div class="legend-items">
+          <div class="legend-item">
+            <div class="legend-color" style="background: #4ade80;"></div>
+            <span class="legend-label">物流配送</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #60a5fa;"></div>
+            <span class="legend-label">巡逻监控</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #fbbf24;"></div>
+            <span class="legend-label">设施巡检</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #f87171;"></div>
+            <span class="legend-label">应急响应</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #a78bfa;"></div>
+            <span class="legend-label">测绘建模</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #f472b6;"></div>
+            <span class="legend-label">载人飞行</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="connection-status">
+        <div class="status-indicator" id="status-indicator"></div>
+        <span class="status-text" id="status-text">连接中...</span>
+      </div>
+    </div>
+    
+    <div id="controls-hint">
+      <kbd>鼠标左键</kbd> 旋转视角 | <kbd>鼠标滚轮</kbd> 缩放 | <kbd>鼠标右键</kbd> 平移
+    </div>
+  </div>
+  
+</body>
+</html>
